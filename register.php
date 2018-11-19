@@ -117,14 +117,28 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             <option value="2" > Student </option>
             </select>
             </div>
-            <div>
-            
+            <div class="form-group">
+            <label>Name</label>
+            <table>
+            <td width="20%">
+            <select id="title" name="title" class="form-control" value="<?php echo $title; ?>">
+                <option> Title </option>
+                <option value="Dr" > Dr </option>
+                <option value="Mr"> Mr </option>
+                <option value="Ms" > Ms </option>
+                <option value="Mrs" > Mrs </option>
+            </select>
+            </td>
+            <td><input type="text" name="firstname" class="form-control" value="<?php echo $firstname; ?>" placeholder="First Name"></td>
+            <td><input type="text" name="lastname" class="form-control" value="<?php echo $lastname; ?>" placeholder="Last Name"></td>
+            </table>
             </div>
             <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
                 <label>Username</label>
                 <input type="text" name="username" class="form-control" value="<?php echo $username; ?>" placeholder="Email Address">
                 <span class="help-block"><?php echo $username_err; ?></span>
                 <span id="email" style="display:none; color:#800000"> Invalid email address </span>
+                <span id="UBemail" style="display:none; color:#800000"> Invalid UB email address </span>
             </div>    
             <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?>">
                 <label>Password</label>
@@ -155,22 +169,52 @@ function isValidEmailAddress(emailAddress) {
     return pattern.test(emailAddress);
 }
 
+function validUBEmailAddress(email)
+{
+    let validate = email.split("@").pop();
+    
+    if ( validate === "ubstudents.edu.bz" || validate === "ub.edu.bz" )
+    {
+        return true;
+    }
+    else {
+        
+        return false;
+    }
+}
+
  $( document ).ready( function() {
                      
  $( "input[name='confirm_password']" ).on("keyup", function (){
     
-       if ($("input[name='confirm_password']").val() != $("input[name='password']").val())
+       if ( $("input[name='confirm_password']").val() != $("input[name='password']").val() )
         {
-          $("#password").show();
-         } else { $("#password").hide(); }
+               $("#password").show();
+         }
+        else {
+               $("#password").hide();
+        }
     });
 
  $( "input[name='username']" ).on("keyup", function (){
+                                  
+ let email = $("input[name='username']").val();
                   
-    if (isValidEmailAddress($("input[name='username']").val()))
-    { $("#email").hide();
-      } else { $("#email").show(); }
+    if ( isValidEmailAddress(email) )
+    {
+        $("#email").hide();
+    }
+     else {
+        $("#email").show();
+    }
  });
+
+$( "input[name='username']" ).on("blur", function (){
+                                 
+    let email = validUBEmailAddress ( $("input[name='username']").val() );
+                                 
+     if ( email == false ){ $("#UBemail").show(); } else { $("#UBemail").hide(); }
+});
                     
 });
 
