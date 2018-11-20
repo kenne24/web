@@ -94,7 +94,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 // Redirect to login page
                 header("location: login.php?msg");
                 //send verification email
-
                 $to = $ubemail;
                 $subject = "Verify your Email";
                 $message = wordwrap("Thank you for registering with us. Please click the link below to activate you account:
