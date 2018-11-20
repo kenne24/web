@@ -92,7 +92,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             // Attempt to execute the prepared statement
             if($stmt->execute()){
                 // Redirect to login page
-                header("location: login.php?msg=An_email_has_been_sent_to_your_UB_Email._Please_click_the_link_provided_to_activate_your_account.");
+                header("location: login.php?msg");
                 //send verification email
                 $to = $ubemail;
                 $subject = "Verify your Email";
