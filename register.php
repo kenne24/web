@@ -39,7 +39,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         }
          
         // Close statement
-        $stmt->close();
+
     }
     
     // Validate password
@@ -63,27 +63,71 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     
     // Check input errors before inserting in database
     if(empty($username_err) && empty($password_err) && empty($confirm_password_err)){
-        
+
+        //get variables from form
+        $username = $_POST["username"];
+        $firstname = $_POST["firstname"];
+        $lastname = $_POST["lastname"];
+        $title = $_POST["title"];
+        $ubemail = $_POST["ubemail"];
+        $personalemail = $_POST["personalemail"];
+
+
         // Prepare an insert statement
-        $sql = "INSERT INTO users (username, password) VALUES (?, ?)";
-         
+        $sql = "INSERT INTO users (username, password, user_level, hash) VALUES (?,?,?,?)";
+
         if($stmt = $mysqli->prepare($sql)){
+            $hash = md5(rand(0,1000)); //creates random code, used for verification email
+            $userlevel = $_POST["account"];
+
             // Bind variables to the prepared statement as parameters
-            $stmt->bind_param("ss", $param_username, $param_password);
+            $stmt->bind_param("ssss", $param_username, $param_password, $param_user_level, $param_hash);
             
             // Set parameters
+            $username = $_POST["username"];
             $param_username = $username;
             $param_password = password_hash($password, PASSWORD_DEFAULT); // Creates a password hash
-            
+            $param_user_level = $userlevel;
+            $param_hash = $hash;
             // Attempt to execute the prepared statement
             if($stmt->execute()){
                 // Redirect to login page
-                header("location: login.php");
+                header("location: login.php?msg=An_email_has_been_sent_to_your_UB_Email._Please_click_the_link_provided_to_activate_your_account.");
+                //send verification email
+                $to = $ubemail;
+                $subject = "Verify your Email";
+                $message = wordwrap("Thank you for registering with us. Please click the link below to activate you account:
+        localhost/web/verify.php?email=".$ubemail."&hash=".$hash."", 75);
+                $headers = "From:noreply@localhost.com" . "\r\n";
+                mail($to, $subject, $message, $headers);//send email
+
+                //enter credentials into the profile table
+                $sql = "INSERT INTO profile (username, firstname, lastname, title, ubemail, personalemail) VALUES (?,?,?,?,?,?)";
+
+                if($stmt = $mysqli->prepare($sql)){
+                    $stmt->bind_param("ssssss", $param_username, $param_firstname, $param_lastname, $param_title, $param_ubemail, $param_personalemail);
+
+                    //set parameters
+                    $param_username = $username;
+                    $param_firstname = $firstname;
+                    $param_lastname = $lastname;
+                    $param_title = $title;
+                    $param_ubemail = $ubemail;
+                    $param_personalemail = $personalemail;
+                    //attempt to execute prepared statement
+                    if($stmt->execute()){
+
+                    }
+                    else{
+                        echo "Error occured when inserting user profile";
+                    }
+                }
+
             } else{
                 echo "Something went wrong. Please try again later.";
             }
         }
-         
+
         // Close statement
         $stmt->close();
     }
@@ -112,34 +156,38 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
          <div class="form-group <?php echo (!empty($account)) ? 'has-error' : ''; ?>">
           <label>Account Type</label>
             <select id="account" name="account" class="form-control" value="<?php echo $account; ?>">
-            <option> Select </option>
             <option value="1"> Lecturer </option>
             <option value="2" > Student </option>
             </select>
             </div>
             <div class="form-group">
+                <input type="text" id="username" name="username" class="form-control" placeholder="username">
+                <span class="help-block"><?php echo $username_err; ?></span>
+            </div>
+            <div class="form-group">
             <label>Name</label>
             <table>
-            <td width="20%">
+            <td width="23%">
             <select id="title" name="title" class="form-control" value="<?php echo $title; ?>">
-                <option> Title </option>
                 <option value="Dr" > Dr </option>
                 <option value="Mr"> Mr </option>
                 <option value="Ms" > Ms </option>
                 <option value="Mrs" > Mrs </option>
             </select>
             </td>
-            <td><input type="text" name="firstname" class="form-control" value="<?php echo $firstname; ?>" placeholder="First Name"></td>
-            <td><input type="text" name="lastname" class="form-control" value="<?php echo $lastname; ?>" placeholder="Last Name"></td>
+            <td><input type="text" name="firstname" class="form-control" placeholder="First Name"></td>
+            <td><input type="text" name="lastname" class="form-control" placeholder="Last Name"></td>
             </table>
             </div>
             <div class="form-group <?php echo (!empty($username_err)) ? 'has-error' : ''; ?>">
-                <label>Username</label>
-                <input type="text" name="username" class="form-control" value="<?php echo $username; ?>" placeholder="Email Address">
-                <span class="help-block"><?php echo $username_err; ?></span>
+                <label>Email</label>
+                <input type="email" name="ubemail" class="form-control" value="<?php echo $username; ?>" placeholder="UB Email Address">
                 <span id="email" style="display:none; color:#800000"> Invalid email address </span>
                 <span id="UBemail" style="display:none; color:#800000"> Invalid UB email address </span>
-            </div>    
+            </div>
+            <div class="form-group">
+                <input type="email" name="personalemail" class="form-control" placeholder="Personal Email Address">
+            </div>
             <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?>">
                 <label>Password</label>
                 <input type="password" name="password" class="form-control" value="<?php echo $password; ?>">
@@ -157,7 +205,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             </div>
             <p>Already have an account? <a href="login.php">Login here</a>.</p>
         </form>
-    </div>    
+    </div>
 </body>
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"
 integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous">
@@ -196,9 +244,9 @@ function validUBEmailAddress(email)
         }
     });
 
- $( "input[name='username']" ).on("keyup", function (){
+ $( "input[name='ubemail']" ).on("keyup", function (){
                                   
- let email = $("input[name='username']").val();
+ let email = $("input[name='ubemail']").val();
                   
     if ( isValidEmailAddress(email) )
     {
@@ -209,9 +257,9 @@ function validUBEmailAddress(email)
     }
  });
 
-$( "input[name='username']" ).on("blur", function (){
+$( "input[name='ubemail']" ).on("blur", function (){
                                  
-    let email = validUBEmailAddress ( $("input[name='username']").val() );
+    let email = validUBEmailAddress ( $("input[name='ubemail']").val() );
                                  
      if ( email == false ){ $("#UBemail").show(); } else { $("#UBemail").hide(); }
 });
