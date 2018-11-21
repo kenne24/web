@@ -74,20 +74,21 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
 
         // Prepare an insert statement
-        $sql = "INSERT INTO users (username, password, user_level, hash) VALUES (?,?,?,?)";
+        $sql = "INSERT INTO users (username, password, user_level, active, hash) VALUES (?,?,?,?,?)";
 
         if($stmt = $mysqli->prepare($sql)){
             $hash = md5(rand(0,1000)); //creates random code, used for verification email
             $userlevel = $_POST["account"];
 
             // Bind variables to the prepared statement as parameters
-            $stmt->bind_param("ssss", $param_username, $param_password, $param_user_level, $param_hash);
+            $stmt->bind_param("sssss", $param_username, $param_password, $param_user_level, $param_active, $param_hash);
             
             // Set parameters
             $username = $_POST["username"];
             $param_username = $username;
             $param_password = password_hash($password, PASSWORD_DEFAULT); // Creates a password hash
             $param_user_level = $userlevel;
+            $param_active = "1";
             $param_hash = $hash;
             // Attempt to execute the prepared statement
             if($stmt->execute()){
@@ -156,23 +157,24 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
          <div class="form-group <?php echo (!empty($account)) ? 'has-error' : ''; ?>">
           <label>Account Type</label>
             <select id="account" name="account" class="form-control" value="<?php echo $account; ?>">
-            <option value="1"> Lecturer </option>
             <option value="2" > Student </option>
+            <option value="1"> Lecturer </option>
             </select>
             </div>
             <div class="form-group">
-                <input type="text" id="username" name="username" class="form-control" placeholder="username">
+                <input type="text" id="username" name="username" class="form-control" placeholder="Username">
                 <span class="help-block"><?php echo $username_err; ?></span>
+                <span id="username_err" style="display:none; color:#800000"> Field cannot be blank </span>
             </div>
             <div class="form-group">
             <label>Name</label>
             <table>
             <td width="23%">
             <select id="title" name="title" class="form-control" value="<?php echo $title; ?>">
-                <option value="Dr" > Dr </option>
-                <option value="Mr"> Mr </option>
-                <option value="Ms" > Ms </option>
-                <option value="Mrs" > Mrs </option>
+                <option value="Mr"> Mr. </option>
+                <option value="Ms" > Ms. </option>
+                <option value="Mrs" > Mrs. </option>
+                <option value="Dr" > Dr. </option>
             </select>
             </td>
             <td><input type="text" name="firstname" class="form-control" placeholder="First Name"></td>
@@ -187,6 +189,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             </div>
             <div class="form-group">
                 <input type="email" name="personalemail" class="form-control" placeholder="Personal Email Address">
+                <span id="email2" style="display:none; color:#800000"> Invalid email address </span>
             </div>
             <div class="form-group <?php echo (!empty($password_err)) ? 'has-error' : ''; ?>">
                 <label>Password</label>
@@ -200,71 +203,134 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 <span id="password" style="display:none; color:#800000"> Passwords do not match </span>
             </div>
             <div class="form-group">
-                <input type="submit" class="btn btn-primary" value="Submit">
+                <input type="submit" id="submit" class="btn btn-primary" value="Submit">
                 <input type="reset" class="btn btn-default" value="Reset">
             </div>
             <p>Already have an account? <a href="login.php">Login here</a>.</p>
         </form>
     </div>
 </body>
+<style>
+
+.error-message {
+background-color: #fce4e4;
+}
+
+</style>
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"
 integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous">
 </script>
 <script>
 
-function isValidEmailAddress(emailAddress) {
-    let pattern = new RegExp(/^(("[\w-\s]+")|([\w-]+(?:\.[\w-]+)*)|("[\w-\s]+")([\w-]+(?:\.[\w-]+)*))(@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$)|(@\[?((25[0-5]\.|2[0-4][0-9]\.|1[0-9]{2}\.|[0-9]{1,2}\.))((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\.){2}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\]?$)/i);
-    return pattern.test(emailAddress);
+// Returns the email address sent if email is valid
+function isValidEmailAddress( emailAddress ) {
+    let pattern = new RegExp(/^(("[\w-\s]+")|([\w-]+(?:\.[\w-]+)*)|("[\w-\s]+")([\w-]+(?:\.[\w-]+)*))(@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$)|(@\[?((25[0-5]\.|2[0-4][0-9]\.|1[0-9]{2}\.|[0-9]{1,2}\.))((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\.){2}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\]?$)/i); //Creates regular expression to match valiables
+    return pattern.test( emailAddress ); //If strings match returns email address
 }
 
-function validUBEmailAddress(email)
+//Returns Boolean to check if email is a valid UB email
+function validUBEmailAddress( email )
 {
-    let validate = email.split("@").pop();
+    let validate = email.split("@").pop(); // Gets all values @ in email address
     
-    if ( validate === "ubstudents.edu.bz" || validate === "ub.edu.bz" )
+    if ( isValidEmailAddress( email ) && ( validate === "ubstudents.edu.bz" || validate === "ub.edu.bz" ) ) //Checks it against these domain names
     {
-        return true;
+        return true; // return true if it has these domains
     }
     else {
         
-        return false;
+        return false; //Other wise return false
     }
 }
 
- $( document ).ready( function() {
+ $( document ).ready( function() { //Waits until all elements on page are loaded before firing jquery
+
+  $("#account").focus(); // Sets focus to drop down on page load
                      
+   $("#username").on("blur", function(){
+        
+      if ($(this).val() === "")
+      {
+         $("#username_err").show(); //Show error
+         $(this).addClass("error-message"); //Add error class
+         $("#submit").prop("disabled",true); //Disable submit button
+                     
+      }
+        else {
+        $("#username_err").hide(); //Hide error
+        $(this).removeClass("error-message"); //Remove error class
+        $("#submit").prop("disabled",false); //Enable error class
+      }
+   });
+
+ //Checks if confirm password and password match
  $( "input[name='confirm_password']" ).on("keyup", function (){
     
-       if ( $("input[name='confirm_password']").val() != $("input[name='password']").val() )
+       if ( $("input[name='confirm_password']").val() != $("input[name='password']").val() ) //Check if passwords match
         {
-               $("#password").show();
+               $("#password").show(); //Show error
+               $(this).addClass("error-message"); //Add error class
+               $("#submit").prop("disabled",true); //Disable sumbit button
          }
         else {
-               $("#password").hide();
+               $("#password").hide(); //Hide error
+               $(this).removeClass("error-message"); //Remove error class
+               $("#submit").prop("disabled",false); //Enable submit button
         }
     });
 
- $( "input[name='ubemail']" ).on("keyup", function (){
+ $( "input[name='ubemail']" ).on("keyup", function (){ // Checks if email address is valid address
                                   
- let email = $("input[name='ubemail']").val();
-                  
-    if ( isValidEmailAddress(email) )
-    {
-        $("#email").hide();
-    }
-     else {
-        $("#email").show();
-    }
+  let email = validUBEmailAddress ( $("input[name='ubemail']").val() ); //Passes UB email to function
+                                 
+   if ( email == false ) // if function returns false
+     {
+         $("#UBemail").show(); //Show error
+         $(this).addClass("error-message"); //Add error class
+         $("#submit").prop("disabled",true); //Disable submit button
+     }
+        else {
+         $("#UBemail").hide(); //Else keep error hidden
+         $(this).removeClass("error-message"); //Remove error class
+         $("#submit").prop("disabled",false); // Enable submit button
+     }
  });
+                     
+ $( "input[name='personalemail']" ).on("keyup", function (){ //Checks is email address is valid address
+                                                     
+    let email = $("input[name='personalemail']").val(); //Gets personal email
+                                                     
+     if ( isValidEmailAddress(email) ) // if function returns email
+     {
+         $("#email2").hide(); //Keep error hidden
+         $(this).removeClass("error-message"); //Remove error class
+         $("#submit").prop("disabled",false); // Enable submit button
+     }
+        else {
+         $("#email2").show(); //Else show error
+         $(this).addClass("error-message"); //Add error class
+         $("#submit").prop("disabled",true); //Disable submit button
+        }
+});
 
-$( "input[name='ubemail']" ).on("blur", function (){
+/** $( "input[name='ubemail']" ).on("blur", function (){ // Checks if email address is valid UB address
                                  
-    let email = validUBEmailAddress ( $("input[name='ubemail']").val() );
+    let email = validUBEmailAddress ( $("input[name='ubemail']").val() ); //Passes UB email to function
                                  
-     if ( email == false ){ $("#UBemail").show(); } else { $("#UBemail").hide(); }
-});
+     if ( email == false ) // if function returns false
+     {
+         $("#UBemail").show(); //Show error
+         $(this).addClass("error-message"); //Add error class
+         $("#submit").prop("disabled",true); //Disable submit button
+     }
+       else {
+        $("#UBemail").hide(); //Else keep error hidden
+        $(this).removeClass("error-message"); //Remove error class
+        $("#submit").prop("disabled",false); // Enable submit button
+     }
+}); **/
                     
-});
+}); //End of document ready
 
 </script>
 </html>
