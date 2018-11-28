@@ -65,7 +65,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                     header("location: welcome.php");
                 }
                 else{
-                    echo "User does not exist";
+                    echo "Username or Password is incorrect";
                 }
             }
             else{
