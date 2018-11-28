@@ -14,50 +14,113 @@ $cellnumber = $_POST["cellnumber"];
 $street = $_POST["street"];
 $city = $_POST["city"];
 $district = $_POST["district"];
+$faculty = $_POST["faculty"];
+$department = $_POST["department"];
+$area = $_POST["areaofspeciality"];
+$type = $_POST["type"];
 
 // Prepare an insert statement
-$sql = "UPDATE profile SET firstname = ?, lastname = ?, title = ?, dob = ?, personalemail = ?, phone = ?, district = ?, city = ?, street = ? WHERE username = ?";
+if($type == "lecturer")
+{
+    //lecturer profile
+    $sql = "UPDATE profile SET firstname = ?, lastname = ?, title = ?, dob = ?, personalemail = ?, phone = ?, district = ?, city = ?, street = ?, faculty = ?, department = ?, area = ? WHERE username = ?";
 
-if($stmt = $mysqli->prepare($sql)){
+    if ($stmt = $mysqli->prepare($sql)) {
 
-    // Bind variables to the prepared statement as parameters
-    $stmt->bind_param("ssssssssss",$param_firstname, $param_lastname, $param_title, $param_dateofbirth, $param_personalemail, $param_phone, $param_district, $param_city, $param_street, $param_username);
+        // Bind variables to the prepared statement as parameters
+        $stmt->bind_param("sssssssssssss", $param_firstname, $param_lastname, $param_title, $param_dateofbirth, $param_personalemail, $param_phone, $param_district, $param_city, $param_street, $param_faculty, $param_department, $param_area, $param_username);
 
-    // bind parameters
-    $param_firstname = $firstname;
-    $param_lastname = $lastname;
-    $param_title = $title;
-    $param_dateofbirth = $dateofbirth;
-    $param_personalemail = $personalemail;
-    $param_phone = $cellnumber;
-    $param_street = $street;
-    $param_city = $city;
-    $param_district = $district;
-    $param_username = $_SESSION["username"];
-    // Attempt to execute the prepared statement to update profile information
-    if($stmt->execute()){
-        //if executed, redirect to welcome.php (welcome page)
-        header("location: welcome.php");
-        //update the active flag if changed in the users table
-        $sql = "UPDATE users SET active = ? WHERE username = ?";
+        // bind parameters
+        $param_firstname = $firstname;
+        $param_lastname = $lastname;
+        $param_title = $title;
+        $param_dateofbirth = $dateofbirth;
+        $param_personalemail = $personalemail;
+        $param_phone = $cellnumber;
+        $param_street = $street;
+        $param_city = $city;
+        $param_district = $district;
+        $param_faculty = $faculty;
+        $param_department = $department;
+        $param_area = $area;
+        $param_username = $_SESSION["username"];
+        // Attempt to execute the prepared statement to update profile information
+        if ($stmt->execute()) {
+            //if executed, redirect to welcome.php (welcome page)
+            header("location: welcome.php");
 
-        if($stmt = $mysqli->prepare($sql)){
-            $stmt->bind_param("ss", $param_status, $param_username);
+            //update the active flag if changed in the users table
+            $sql = "UPDATE users SET active = ? WHERE username = ?";
 
-            //set parameters
-            $param_status = $status;
-            $param_username = $_SESSION["username"];
-            //attempt to execute prepared statement
-            if($stmt->execute()){
+            if ($stmt = $mysqli->prepare($sql)) {
+                $stmt->bind_param("ss", $param_status, $param_username);
 
+                //set parameters
+                $param_status = $status;
+                $param_username = $_SESSION["username"];
+                //attempt to execute prepared statement
+                if ($stmt->execute()) {
+
+                } else {
+                    echo "Error occured when updating status";
+                }
             }
-            else{
-                echo "Error occured when updating status";
-            }
+
+        } else {
+            echo "Something went wrong. Please try again later.";
         }
+    }
+    else{
+        echo "query failed to prepare:\n".mysqli_stmt_error($stmt);
+    }
 
-    } else{
-        echo "Something went wrong. Please try again later.";
+}
+else {
+    //student profile
+
+    $sql = "UPDATE profile SET firstname = ?, lastname = ?, title = ?, dob = ?, personalemail = ?, phone = ?, district = ?, city = ?, street = ? WHERE username = ?";
+
+    if ($stmt = $mysqli->prepare($sql)) {
+
+        // Bind variables to the prepared statement as parameters
+        $stmt->bind_param("ssssssssss", $param_firstname, $param_lastname, $param_title, $param_dateofbirth, $param_personalemail, $param_phone, $param_district, $param_city, $param_street, $param_username);
+
+        // bind parameters
+        $param_firstname = $firstname;
+        $param_lastname = $lastname;
+        $param_title = $title;
+        $param_dateofbirth = $dateofbirth;
+        $param_personalemail = $personalemail;
+        $param_phone = $cellnumber;
+        $param_street = $street;
+        $param_city = $city;
+        $param_district = $district;
+        $param_username = $_SESSION["username"];
+        // Attempt to execute the prepared statement to update profile information
+        if ($stmt->execute()) {
+            //if executed, redirect to welcome.php (welcome page)
+            echo "Student success\n";
+            //header("location: welcome.php");
+            //update the active flag if changed in the users table
+            $sql = "UPDATE users SET active = ? WHERE username = ?";
+
+            if ($stmt = $mysqli->prepare($sql)) {
+                $stmt->bind_param("ss", $param_status, $param_username);
+
+                //set parameters
+                $param_status = $status;
+                $param_username = $_SESSION["username"];
+                //attempt to execute prepared statement
+                if ($stmt->execute()) {
+
+                } else {
+                    echo "Error occured when updating status";
+                }
+            }
+
+        } else {
+            echo "Something went wrong. Please try again later.";
+        }
     }
 }
 

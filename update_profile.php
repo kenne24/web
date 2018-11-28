@@ -2,7 +2,7 @@
 require_once "config.php";
 session_start();
 
-$title = $firstname = $lastname = $status = $dob = $personalemail = $cellnumber = $street = $city = $district = "";
+$title = $firstname = $lastname = $status = $dob = $personalemail = $cellnumber = $street = $city = $district = $level = "";
 
 // Check if the user is logged in, if not then redirect him to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
@@ -34,6 +34,9 @@ if($stmt = mysqli_prepare($mysqli, $sql)) {
         $street = $row["street"];
         $city = $row["city"];
         $district = $row["district"];
+        $faculty = $row["faculty"];
+        $department = $row["department"];
+        $area = $row["area"];
     }
     else{
         echo "An error occurred: \n" . mysqli_stmt_error($stmt);
@@ -41,6 +44,30 @@ if($stmt = mysqli_prepare($mysqli, $sql)) {
 }
 else{
     echo "Invalid query: " . mysqli_stmt_error($stmt);
+}
+
+//get user level of current user (determine to show/hide lecturer details)
+$levelsql = "SELECT user_level FROM users WHERE username = ?";
+if($levelstmt = mysqli_prepare($mysqli, $levelsql)) {
+
+    //bind parameter
+    mysqli_stmt_bind_param($levelstmt, "s", $param_lev_username);
+    $param_lev_username = $_SESSION["username"];
+
+    //attempt query execution
+    if (mysqli_stmt_execute($levelstmt)) {
+        $levelresult = $levelstmt->get_result();
+        $levelrow = $levelresult->fetch_assoc();
+
+        //get user level of current user
+        $level = $levelrow["user_level"];
+    }
+    else{
+        echo "An error occurred: \n" . mysqli_stmt_error($levelstmt);
+    }
+}
+else{
+    echo "Invalid query: " . mysqli_stmt_error($levelstmt);
 }
 ?>
 <!DOCTYPE html>
@@ -265,6 +292,40 @@ else{
                                 </select>
                             </label>
                         </div>
+                        <div id="lecturer-section" hidden>
+                        <div class="form-group">
+                            <label class="styled-select">
+                                <select name="faculty">
+                                    <option value="0">Choose Faculty</option>
+                                    <option value="FEA">Faculty of Education and Arts</option>
+                                    <option value="FMASS">Faculty of Management and Social Sciences</option>
+                                    <option value="FNAS">Faculty of Nursing, Allied Health and Social Work</option>
+                                    <option value="FST">Faculty of Science and Technology</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                                <label class="styled-select">
+                                <select name="department">
+                                    <option value="0">Choose Department</option>
+                                    <?php
+                                        $sql = mysqli_query($mysqli, "SELECT * FROM departments");
+                                        while($row = $sql->fetch_assoc()){
+                                            echo "<option value=".$row['departmentid'].">".$row['departmentname']."</option>";
+                                        }
+                                    ?>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <div class="input-icon">
+                                <i class="lni-book"></i>
+                                <input type="text" class="form-control" name="areaofspeciality" placeholder="Area of Specialty">
+                            </div>
+                        </div>
+                        </div>
+                        <input type="text" name="type" hidden id="type">
+
                     </fieldset>
                         <input id="update-button" type="button" class="btn btn-common log-btn" value="Update">
                         <!--<button id="update-button" onclick="confirmUpdate();" class="btn btn-common log-btn">Update</button>-->
@@ -387,6 +448,7 @@ else{
 <script>
     $(document).ready(function(){
         //transfer php variables to javascript variables
+        //easier to manipulate
         let salutation = "<?php echo $title ?>";
         let firstname = "<?php echo $firstname ?>";
         let lastname = "<?php echo $lastname ?>";
@@ -397,10 +459,16 @@ else{
         let street = "<?php echo $street ?>";
         let city = "<?php echo $city ?>";
         let district = "<?php echo $district ?>";
+        let level = "<?php echo $level ?>";
+        let faculty = "<?php echo $faculty ?>";
+        let department = "<?php echo $department ?>";
+        let area = "<?php echo $area ?>";
+
         console.log(salutation);console.log(firstname);console.log(lastname);
         console.log(status);console.log(dob);console.log(email);
         console.log(cell);console.log(street);console.log(city);
-        console.log(district);
+        console.log(district); console.log(level);
+        console.log(faculty);console.log(department);console.log(area);
 
         //match title option with title of user
         $("select[name='title']").val(salutation);
@@ -423,6 +491,14 @@ else{
 
         //match district
         $("select[name='district']").val(district);
+
+        //match faculty
+        $("select[name='faculty']").val(faculty);
+        //match department
+        $("select[name='department']").val(department);
+        //match area of specialty
+        $("input[name='areaofspeciality']").val(area);
+
         //make edit button red by default (profile not editable)
         $("#edit-button").css("backgroundColor", "red");
 
@@ -439,25 +515,38 @@ else{
            }
        });
 
-    });
+        //update button clicked
+        $("#update-button").on("click", function(){
+            /*swal({
+               title: "Confirm",
+               text: "Ensure the information provided is correct.\nDo you wish to update your profile?",
+               icon: "info",
+               buttons: true,
+               closeOnClickOutside: false,
+           });*/
 
+            let answer = confirm("Do you want to submit?");
+            if(answer){
+                //submit the form to update user information
+                $("#update-profile").submit();
+            }
+        });
 
-    //update button clicked
-    $("#update-button").on("click", function(){
-        /*swal({
-           title: "Confirm",
-           text: "Ensure the information provided is correct.\nDo you wish to update your profile?",
-           icon: "info",
-           buttons: true,
-           closeOnClickOutside: false,
-       });*/
-
-        let answer = confirm("Do you want to submit?");
-        if(answer){
-            //submit the form to update user information
-            $("#update-profile").submit();
+        //determine whether or not to show department,faculty,area of speciality
+        //depends on lecturer (show) or student (hide)
+        if(level == 1){
+            $("#lecturer-section").prop("hidden", false);
+            $("#type").val("lecturer");
         }
+        else{
+            $("#lecturer-section").prop("hidden", true);
+            $("#type").val("student");
+        }
+
     });
+
+
+
 </script>
 </body>
 
