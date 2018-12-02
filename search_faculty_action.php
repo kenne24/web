@@ -26,7 +26,7 @@ if( isset($_POST["lecturername"]) || isset($_POST["department"]) ){
         if (mysqli_stmt_execute($stmt)) {
             $result = $stmt->get_result(); //get result of query
             $row = $result->fetch_assoc();
-            //create table with appropriate headers
+            //create table with headers
             if($result->num_rows > 0){
                 $output .="<h4 align='center'>Search Results</h4>";
                 $output .="<table class='table table-borderless table-striped thead-light'>
