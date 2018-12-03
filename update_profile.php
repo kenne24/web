@@ -30,7 +30,7 @@ if($stmt = mysqli_prepare($mysqli, $sql)) {
         $status = $row["active"];
         $dob = $row["dob"];
         $personalemail = $row["personalemail"];
-        $cell = $row["phone"];
+        $cellnumber = $row["phone"];
         $street = $row["street"];
         $city = $row["city"];
         $district = $row["district"];
@@ -485,7 +485,7 @@ else{
 
         //match email, cellnumber, street, town
         $("input[name='personalemail']").val(email);
-        $("input[name='cellnumber']").val(cell);
+        cell == "0" ? $("input[name='cellnumber']").val("") : $("input[name='cellnumber']").val(cell);
         $("input[name='street']").val(street);
         $("input[name='city']").val(city);
 

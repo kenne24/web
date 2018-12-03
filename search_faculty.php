@@ -23,6 +23,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
     <meta name="author" content="Grayrids">
     <title>TheHunt - Bootstrap HTML5 Job Portal Template</title>
 
+
     <link rel="stylesheet" href="assets/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/line-icons.css">
     <link rel="stylesheet" href="assets/css/owl.carousel.min.css">
@@ -133,45 +134,47 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
                 <div class="contents">
                     <h2>Search for Lecturer</h2>
                     <div class="job-search-form">
-                        <form method="post" action="search_faculty_action.php">
-                            <div class="row">
-                                <div class="col-lg-5 col-md-5 col-xs-12">
-                                    <div class="form-group">
-                                        <input id="lecturername" name="lecturername" class="form-control" type="text" placeholder="All Lecturers">
-                                    </div>
-                                </div>
-                                <div class="col-lg-5 col-md-5 col-xs-12">
-                                    <div class="form-group">
-                                        <div class="search-category-container">
-                                            <label class="styled-select">
-                                                <select id="department" name="department">
-                                                    <option value="0">All Departments</option>
-                                                    <?php
-                                                    $sql = mysqli_query($mysqli, "SELECT * FROM departments");
-                                                    while($row = $sql->fetch_assoc()){
-                                                        echo "<option value=".$row['departmentid'].">".$row['departmentname']."</option>";
-                                                    }
-                                                    ?>
-                                                </select>
-                                            </label>
-                                        </div>
-                                        <i class="lni-map-marker"></i>
-                                    </div>
-                                </div>
-                                <div class="col-lg-2 col-md-2 col-xs-12">
-                                    <button id="submit" type="submit" class="button"><i class="lni-search"></i></button>
+                        <div class="row">
+                            <div class="col-lg-5 col-md-5 col-xs-12">
+                                <div class="form-group">
+                                    <input id="lecturername" name="lecturername" class="form-control" type="text" placeholder="All Lecturers">
                                 </div>
                             </div>
-                        </form>
+                            <div class="col-lg-5 col-md-5 col-xs-12">
+                                <div class="form-group">
+                                    <div class="search-category-container">
+                                        <label class="styled-select">
+                                            <select id="department" name="department">
+                                                <option value="0">All Departments</option>
+                                                <?php
+                                                $sql = mysqli_query($mysqli, "SELECT * FROM departments");
+                                                while($row = $sql->fetch_assoc()){
+                                                    echo "<option value=".$row['departmentid'].">".$row['departmentname']."</option>";
+                                                }
+                                                ?>
+                                            </select>
+                                        </label>
+                                    </div>
+                                    <i class="lni-map-marker"></i>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-2 col-xs-12">
+                                <button id="name-submit" type="submit" class="button">Search by Name<i class="lni-search"></i></button>
+                            </div>
+                            <div class="col-lg-2 col-md-2 col-xs-12">
+                                <button id="department-submit" type="submit" class="button">Search by Department<i class="lni-search"></i></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 </header>
 
-    <div class="container" id="result">
-    </div>
+<div class="container" id="result">
+</div>
 
 <a href="#" class="back-to-top">
     <i class="lni-arrow-up"></i>
@@ -192,27 +195,36 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
     $(document).ready(function(){
 
         //search button clicked
-        $("#submit").on("click", function(){
+        $("#department-submit").on("click", function(){
             let name = $("#lecturername").val();
             let department = $("#department").find('option:selected').val();
+            //ajax request to search
+            $.ajax({
+                url: "search_faculty_deptaction.php?dept",
+                method: "post",
+                data:  {search:name, dept: department},
+                dataType: "text",
+                success: function(data)
+                {
+                    $("#result").html(data);
+                }
+            });
+        });
 
-            if(name != "" || department != 0){
-                //ajax request to search
-                $.ajax({
-                   url: "search_faculty_action.php",
-                   method: "post",
-                   data:  {search:name, dept: department},
-                    dataType: "text",
-                    success: function(data)
-                    {
-                        $("#result").html(data);
-                    }
-                });
-            }
-            else
-            {
-                $("#result").html("");
-            }
+        $("#name-submit").on("click", function(){
+            let name = $("#lecturername").val();
+            let department = $("#department").find('option:selected').val();
+            //ajax request to search
+            $.ajax({
+                url: "search_faculty_nameaction.php?name",
+                method: "post",
+                data:  {search:name, dept: department},
+                dataType: "text",
+                success: function(data)
+                {
+                    $("#result").html(data);
+                }
+            });
         });
     });
 </script>
