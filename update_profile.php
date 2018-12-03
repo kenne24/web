@@ -480,7 +480,7 @@ else{
         //match activation status option with user's status
         $("select[name='status']").val(status);
 
-        //match date of birth
+        //match date of birt
         $("input[name='dateofbirth']").val(dob);
 
         //match email, cellnumber, street, town
